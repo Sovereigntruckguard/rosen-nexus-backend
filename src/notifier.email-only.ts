@@ -21,7 +21,7 @@ if (!SENDGRID_API_KEY || !MAIL_FROM || !MAIL_TO) {
 }
 
 const base = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-// IMPORTANT: trabajar siempre sobre el esquema ops
+// leemos/escribimos tablas del schema ops:
 const db = base.schema('ops');
 
 async function fetchPending(limit = 25) {
@@ -29,7 +29,7 @@ async function fetchPending(limit = 25) {
     .from('outbox')
     .select('id, alert_id, target, status, attempts')
     .eq('status', 'pending')
-    .eq('target', 'email') // solo email
+    .eq('target', 'email')
     .order('created_at', { ascending: true })
     .limit(limit);
   if (error) throw new Error(error.message);
@@ -55,8 +55,8 @@ async function markSent(outboxId: string) {
 }
 
 async function markFailed(outboxId: string, err: string) {
-  // IMPORTANTE: RPC calificado con el esquema
-  const { error } = await base.rpc('ops.inc_outbox_attempt', { p_id: outboxId, p_error: err });
+  // AHORA llamamos al wrapper público (sin "ops.")
+  const { error } = await base.rpc('inc_outbox_attempt', { p_id: outboxId, p_error: err });
   if (error) throw new Error(error.message);
 }
 

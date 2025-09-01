@@ -8,10 +8,13 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
   process.exit(1);
 }
 
-const base = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false },
+});
 
 async function main() {
-  const { data, error } = await base.rpc('ops.sla_watch');
+  // ¡OJO! ahora llamamos al wrapper público sin "ops."
+  const { data, error } = await supabase.rpc('sla_watch');
   if (error) {
     console.error('[sla-watcher] rpc error:', error.message);
     process.exit(1);
@@ -24,6 +27,7 @@ async function main() {
     }
   }
 }
+
 main().catch((e) => {
   console.error('[sla-watcher] fatal:', e.message);
   process.exit(1);
