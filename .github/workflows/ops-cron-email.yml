@@ -3,7 +3,7 @@
 on:
   schedule:
     - cron: "*/5 * * * *"   # cada 5 minutos (UTC)
-  workflow_dispatch: {}      # puedes lanzarlo manualmente
+  workflow_dispatch: {}      # permite ejecutarlo manualmente
 
 jobs:
   run-ops:
@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: "20"
 
-      # (opcional) ver el árbol para confirmar rutas
+      # (opcional) inspección del árbol del repo
       - name: Debug tree
         run: |
           pwd
@@ -43,3 +43,23 @@ jobs:
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
           MAIL_TO: ${{ secrets.MAIL_TO }}
+
+      # 🔎 Resumen visible en logs de cada corrida
+      - name: Show outbox status
+        run: |
+          npx tsx -e "
+          import 'dotenv/config';
+          import { createClient } from '@supabase/supabase-js';
+          const c = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!, { auth:{persistSession:false} });
+          (async () => {
+            const { data, error } = await c.schema('ops').from('outbox').select('status');
+            if (error) { console.error(error); process.exit(1); }
+            const sent = data?.filter(x => x.status === 'sent').length ?? 0;
+            const pending = data?.filter(x => x.status === 'pending').length ?? 0;
+            const failed = data?.filter(x => x.status === 'failed').length ?? 0;
+            console.log('📨 Emails enviados:', sent, '| pendientes:', pending, '| fallidos:', failed);
+          })();
+          "
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
