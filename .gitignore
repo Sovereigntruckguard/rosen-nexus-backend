@@ -1,7 +1,5 @@
-# env & secrets
-.env
-.env.*
+ .env
+ .env.*
+ dist
+ node_modules
 
-# builds
-dist
-node_modules
